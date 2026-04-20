@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartPay FINAL FIX</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+:root{
+  --bg: linear-gradient(135deg,#fbc2eb,#a6c1ee);
+  --card:#ffffff;
+  --text:#333;
+  --btn:#6c63ff;
+}
+.dark{
+  --bg:#0f172a;
+  --card:#111827;
+  --text:#fff;
+  --btn:#2563eb;
+}
+
+body{
+  margin:0;
+  font-family:Arial;
+  background:var(--bg);
+  color:var(--text);
+  transition:0.4s;
+}
+
+.header{
+  padding:20px;
+  text-align:center;
+  font-size:24px;
+  font-weight:bold;
+}
+
+.container{
+  max-width:1100px;
+  margin:auto;
+  padding:15px;
+}
+
+.card{
+  background:var(--card);
+  padding:15px;
+  border-radius:12px;
+  margin-bottom:15px;
+}
+
+input,button{
+  padding:10px;
+  margin:5px;
+  border-radius:8px;
+  border:1px solid #ccc;
+  width:100%;
+}
+
+button{
+  background:var(--btn);
+  color:white;
+  cursor:pointer;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:10px;
+}
+
+th,td{
+  padding:10px;
+  border-bottom:1px solid #ddd;
+  text-align:center;
+}
+
+.theme-btn{
+  position:fixed;
+  top:10px;
+  right:10px;
+}
+</style>
+</head>
+
+<body>
+
+<button class="theme-btn" onclick="toggleTheme()">🌙 Theme</button>
+
+<div class="header">💼 SmartPay FINAL FIX</div>
+
+<!-- LOGIN -->
+<div id="login" class="container">
+  <div class="card">
+    <h2>Login</h2>
+    <input id="user" placeholder="Username">
+    <input id="pass" type="password" placeholder="Password">
+    <button onclick="loginUser()">Login</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="container" style="display:none;">
+
+<div class="card">
+<h3>Employee Entry</h3>
+
+<input id="empid" placeholder="Employee ID">
+<input id="name" placeholder="Name">
+<input id="position" placeholder="Position">
+<input id="rate" type="number" placeholder="Rate">
+
+<label>Time In</label>
+<input id="timein" type="time">
+
+<label>Time Out</label>
+<input id="timeout" type="time">
+
+<input id="ot" type="number" placeholder="Overtime Hours">
+
+<button onclick="addEmployee()">Add Employee</button>
+<button onclick="downloadPayslip()">Download Payslip</button>
+
+</div>
+
+<div class="card">
+<h3>Payroll Table</h3>
+
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Name</th>
+<th>Position</th>
+<th>Hours</th>
+<th>Late</th>
+<th>Net Pay</th>
+<th>Action</th>
+</tr>
+</thead>
+
+<tbody id="tb"></tbody>
+</table>
+
+<h3 id="total"></h3>
+</div>
+
+<div class="card">
+<h3>Analytics</h3>
+<canvas id="chart"></canvas>
+</div>
+
+</div>
+
+<script>
+
+let db = JSON.parse(localStorage.getItem('payroll')) || [];
+let chart;
+let role = "";
+
+// 🌙 THEME
+function toggleTheme(){
+  document.body.classList.toggle('dark');
+}
+
+// 🔐 LOGIN
+function loginUser(){
+  let u = user.value.trim();
+  let p = pass.value.trim();
+
+  if(u==="admin" && p==="1234"){
+    role="admin";
+  } else if(u==="staff" && p==="1234"){
+    role="staff";
+  } else {
+    alert("Wrong username or password");
+    return;
+  }
+
+  document.getElementById('login').style.display="none";
+  document.getElementById('app').style.display="block";
+  render();
+}
+
+// 🕒 AUTO HOURS (FIXED FINAL)
+function getHours(ti, to){
+  let start = new Date(`2020-01-01T${ti}`);
+  let end = new Date(`2020-01-01T${to}`);
+
+  let hours = (end - start) / (1000 * 60 * 60);
+
+  if(hours < 0) hours += 24;
+
+  return Math.max(0, hours - 1); // 1 hour break
+}
+
+// ⏰ LATE
+function getLate(ti){
+  let limit = new Date(`2020-01-01T08:00`);
+  let actual = new Date(`2020-01-01T${ti}`);
+
+  let late = (actual - limit) / (1000 * 60);
+  return late > 0 ? late : 0;
+}
+
+// 💰 CALC
+function calc(rate,hours,ot,late){
+  let gross = rate * hours + ot * rate * 1.5;
+  let lateDed = (late/60) * rate;
+  let ded = gross * 0.1 + 350 + lateDed;
+  return gross - ded;
+}
+
+// ➕ ADD EMPLOYEE (AUTO HOURS ENABLED)
+function addEmployee(){
+
+  if(!name.value || !timein.value || !timeout.value){
+    return alert("Fill all fields");
+  }
+
+  let hours = getHours(timein.value, timeout.value); // ✅ AUTO HOURS
+  let late = getLate(timein.value);
+
+  let net = calc(+rate.value, hours, +ot.value, late);
+
+  db.push({
+    id: empid.value,
+    name: name.value,
+    position: position.value,
+    timeIn: timein.value,
+    timeOut: timeout.value,
+    hours: hours,   // ✅ AUTO STORED
+    late: late,
+    net: net
+  });
+
+  localStorage.setItem('payroll', JSON.stringify(db));
+  render();
+}
+
+// ❌ DELETE
+function del(i){
+  if(role !== "admin") return alert("Admin only");
+  db.splice(i,1);
+  localStorage.setItem('payroll', JSON.stringify(db));
+  render();
+}
+
+// 📊 RENDER
+function render(){
+  let tb = document.getElementById('tb');
+  let total = document.getElementById('total');
+
+  tb.innerHTML="";
+  let sum=0;
+
+  db.forEach((e,i)=>{
+    sum += e.net;
+
+    tb.innerHTML += `
+    <tr>
+      <td>${e.id}</td>
+      <td>${e.name}</td>
+      <td>${e.position}</td>
+      <td>${e.hours.toFixed(2)} hrs</td>
+      <td>${e.late.toFixed(0)} min</td>
+      <td>₱${e.net.toFixed(2)}</td>
+      <td><button onclick="del(${i})">Delete</button></td>
+    </tr>`;
+  });
+
+  total.innerText = "Total Payroll: ₱" + sum.toFixed(2);
+  drawChart();
+}
+
+// 📈 CHART
+function drawChart(){
+  if(chart) chart.destroy();
+
+  chart = new Chart(document.getElementById('chart'),{
+    type:'bar',
+    data:{
+      labels: db.map(e=>e.name),
+      datasets:[{
+        label:'Net Pay',
+        data: db.map(e=>e.net)
+      }]
+    }
+  });
+}
+
+// 📄 PDF
+function downloadPayslip(){
+
+  if(db.length === 0) return alert("No data");
+
+  const { jsPDF } = window.jspdf;
+  let doc = new jsPDF();
+  let y = 20;
+
+  db.forEach((e,i)=>{
+
+    doc.text("SMARTPAY COMPANY",70,y);
+    y += 10;
+
+    doc.text(`ID: ${e.id}`,20,y);
+    doc.text(`Name: ${e.name}`,20,y+10);
+    doc.text(`Position: ${e.position}`,20,y+20);
+    doc.text(`Time In: ${e.timeIn}`,20,y+30);
+    doc.text(`Time Out: ${e.timeOut}`,20,y+40);
+
+    doc.text(`Hours Worked: ${e.hours.toFixed(2)}`,20,y+50); // ✅ FIXED
+    doc.text(`Late: ${e.late.toFixed(0)} mins`,20,y+60);
+    doc.text(`Net Pay: ₱${e.net.toFixed(2)}`,20,y+70);
+
+    doc.text("Signature: ___________",20,y+85);
+
+    if(i < db.length - 1){
+      doc.addPage();
+      y = 20;
+    }
+  });
+
+  doc.save("payslip.pdf");
+}
+
+</script>
+
+</body>
+</html>
