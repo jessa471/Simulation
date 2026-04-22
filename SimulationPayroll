@@ -1,51 +1,371 @@
-# Sample workflow for building and deploying a Jekyll site to GitHub Pages
-name: Deploy Jekyll with GitHub Pages dependencies preinstalled
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartPay PRO | With Date</title>
 
-on:
-  # Runs on pushes targeting the default branch
-  push:
-    branches: ["main"]
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+<style>
+:root{
+  --bg: #fdfcff; 
+  --card: #ffffff;
+  --text: #333;
+  --btn: #7c3aed;
+  --lining: #f3f0ff; 
+  --accent: #ddd6fe;
+}
+.dark{
+  --bg: #111111;
+  --card: #1a1a1a;
+  --text: #eee;
+  --btn: #a78bfa;
+  --lining: #333;
+  --accent: #4c1d95;
+}
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+body{
+  margin:0;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  transition: 0.3s;
+}
 
-jobs:
-  # Build job
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-      - name: Build with Jekyll
-        uses: actions/jekyll-build-pages@v1
-        with:
-          source: ./
-          destination: ./_site
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+.header{
+  padding: 30px;
+  text-align: center;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--btn);
+}
 
-  # Deployment job
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
+.container{
+  max-width: 1100px;
+  margin: auto;
+  padding: 15px;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.card{
+  background: var(--card);
+  padding: 25px;
+  border-radius: 20px;
+  margin-bottom: 20px;
+  border: 1.5px solid var(--lining);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.02);
+}
+
+input, button{
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 10px;
+  border: 1.5px solid var(--lining);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--btn);
+  background: #fff;
+}
+
+button{
+  background: var(--btn);
+  color: white;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+button:hover{
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+table{
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td{
+  padding: 12px;
+  border-bottom: 1px solid var(--lining);
+  text-align: center;
+  font-size: 13px;
+}
+
+.theme-btn {
+  position: fixed;
+  top: 15px;
+  right: 15px;
+  width: auto;
+  z-index: 10000; 
+  padding: 10px 20px;
+  background: var(--card);
+  color: var(--btn);
+  border: 1.5px solid var(--btn);
+  border-radius: 50px;
+  font-weight: bold;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+</style>
+</head>
+
+<body>
+
+<button class="theme-btn" onclick="toggleTheme()">🌙 Switch Mode</button>
+
+<div class="header">💼 SmartPay <span style="font-weight:300">PRO</span></div>
+
+<div id="login" class="container">
+  <div class="card" style="max-width: 400px; margin: auto; text-align: center;">
+    <h2 style="margin-top:0">Welcome</h2>
+    <input id="user" placeholder="Username">
+    <input id="pass" type="password" placeholder="Password">
+    <button onclick="loginUser()">Open Dashboard</button>
+  </div>
+</div>
+
+<div id="app" class="container" style="display:none;">
+
+<div class="card">
+<h3 style="margin-top:0">Employee Entry</h3>
+
+<div class="grid-3">
+    <div>
+        <label style="font-size:11px; font-weight:bold; opacity:0.6">DATE</label>
+        <input id="entrydate" type="date">
+    </div>
+    <div>
+        <label style="font-size:11px; font-weight:bold; opacity:0.6">ID NUMBER</label>
+        <input id="empid" placeholder="ID">
+    </div>
+    <div>
+        <label style="font-size:11px; font-weight:bold; opacity:0.6">FULL NAME</label>
+        <input id="name" placeholder="Name">
+    </div>
+</div>
+
+<div class="grid-2">
+    <input id="position" placeholder="Position">
+    <input id="rate" type="number" placeholder="Rate per Hour">
+</div>
+
+<div class="grid-2">
+    <div>
+        <label style="font-size:11px; font-weight:bold; opacity:0.6">TIME IN</label>
+        <input id="timein" type="time">
+    </div>
+    <div>
+        <label style="font-size:11px; font-weight:bold; opacity:0.6">TIME OUT</label>
+        <input id="timeout" type="time">
+    </div>
+</div>
+
+<input id="ot" type="number" placeholder="Overtime Hours (OT)">
+
+<div class="grid-2">
+    <button onclick="addEmployee()" style="background:#10b981;">Add Employee</button>
+    <button onclick="downloadPayslip()" style="background:#6366f1;">Download PDF</button>
+</div>
+</div>
+
+<div class="card">
+<h3>Payroll Records</h3>
+<div style="overflow-x:auto;">
+    <table>
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Hrs</th>
+            <th>Late</th>
+            <th>OT Pay</th>
+            <th>Net Pay</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody id="tb"></tbody>
+    </table>
+</div>
+<h2 id="total" style="text-align:right; color:var(--btn); margin-top:20px;"></h2>
+</div>
+
+<div class="card">
+<h3>Analytics</h3>
+<canvas id="chart" style="max-height: 250px;"></canvas>
+</div>
+
+</div>
+
+<script>
+let db = JSON.parse(localStorage.getItem('payroll_dated_v1')) || [];
+let chart;
+
+// I-set ang date input sa "Today" automatically
+document.getElementById('entrydate').valueAsDate = new Date();
+
+function toggleTheme(){
+  document.body.classList.toggle('dark');
+}
+
+function loginUser(){
+  let u = document.getElementById('user').value.trim();
+  let p = document.getElementById('pass').value.trim();
+  if(u && p){
+    document.getElementById('login').style.display="none";
+    document.getElementById('app').style.display="block";
+    render();
+  } else {
+    alert("Please enter credentials.");
+  }
+}
+
+function getHours(ti, to){
+  let start = new Date(`2020-01-01T${ti}`);
+  let end = new Date(`2020-01-01T${to}`);
+  let hours = (end - start) / (1000 * 60 * 60);
+  if(hours < 0) hours += 24;
+  return Math.max(0, hours - 1); 
+}
+
+function getLate(ti){
+  let limit = new Date(`2020-01-01T08:00`);
+  let actual = new Date(`2020-01-01T${ti}`);
+  let late = (actual - limit) / (1000 * 60);
+  return late > 0 ? late : 0;
+}
+
+function calc(rate,hours,ot,late){
+  let otEarnings = ot * 50; 
+  let gross = (rate * hours) + otEarnings; 
+  let lateDed = (late/60) * rate;
+  let ded = (gross * 0.1) + 350 + lateDed;
+  return { net: gross - ded, otPay: otEarnings };
+}
+
+function addEmployee(){
+  let empName = document.getElementById('name').value.trim();
+  let empDate = document.getElementById('entrydate').value;
+  
+  if(!empName || !empDate){
+    return alert("Please enter Name and Date.");
+  }
+
+  let v_ti = document.getElementById('timein').value || "08:00"; 
+  let v_to = document.getElementById('timeout').value || "17:00";
+  let v_rate = document.getElementById('rate').value || 0;
+  let v_ot = document.getElementById('ot').value || 0;
+
+  let hours = getHours(v_ti, v_to);
+  let late = getLate(v_ti);
+  let result = calc(+v_rate, hours, +v_ot, late);
+
+  db.push({
+    date: empDate,
+    id: document.getElementById('empid').value || "---",
+    name: empName,
+    position: document.getElementById('position').value || "Staff",
+    timeIn: v_ti, timeOut: v_to,
+    hours: hours, late: late,
+    otPay: result.otPay, net: result.net
+  });
+
+  localStorage.setItem('payroll_dated_v1', JSON.stringify(db));
+  render();
+  
+  document.getElementById('name').value = "";
+  document.getElementById('empid').value = "";
+}
+
+function del(i){
+  db.splice(i,1);
+  localStorage.setItem('payroll_dated_v1', JSON.stringify(db));
+  render();
+}
+
+function render(){
+  let tb = document.getElementById('tb');
+  let total = document.getElementById('total');
+  tb.innerHTML="";
+  let sum=0;
+
+  db.forEach((e,i)=>{
+    sum += e.net;
+    tb.innerHTML += `
+    <tr>
+      <td>${e.date}</td>
+      <td>${e.id}</td>
+      <td><b>${e.name}</b></td>
+      <td>${e.hours.toFixed(1)}h</td>
+      <td style="color:#f87171">${e.late.toFixed(0)}m</td>
+      <td style="color:var(--btn)">₱${e.otPay}</td>
+      <td style="font-weight:bold">₱${e.net.toFixed(2)}</td>
+      <td><button onclick="del(${i})" style="background:#ff4d4d; width:auto; padding:5px 10px;">Del</button></td>
+    </tr>`;
+  });
+
+  total.innerText = "Total: ₱" + sum.toLocaleString();
+  drawChart();
+}
+
+function drawChart(){
+  if(chart) chart.destroy();
+  chart = new Chart(document.getElementById('chart'),{
+    type:'bar',
+    data:{
+      labels: db.map(e=>e.name),
+      datasets:[{ label:'Salary', data: db.map(e=>e.net), backgroundColor: '#7c3aed' }]
+    }
+  });
+}
+
+function downloadPayslip(){
+  if(db.length === 0) return alert("No records.");
+  const { jsPDF } = window.jspdf;
+  let doc = new jsPDF();
+  db.forEach((e,i)=>{
+    doc.setTextColor(124, 58, 237);
+    doc.setFontSize(22);
+    doc.text("SMARTPAY PAYROLL SLIP", 105, 25, {align: 'center'});
+    doc.setFontSize(10);
+    doc.text(`Date Issued: ${e.date}`, 105, 32, {align: 'center'});
+    doc.setDrawColor(233, 228, 255); doc.line(20, 38, 190, 38);
+    
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(12);
+    doc.text(`Employee Name: ${e.name}`, 20, 55);
+    doc.text(`ID: ${e.id} | Position: ${e.position}`, 20, 65);
+    doc.text(`Work Hours: ${e.hours.toFixed(2)} | OT: ₱${e.otPay}`, 20, 80);
+    doc.setFont(undefined, 'bold');
+    doc.text(`NET PAYABLE: PHP ${e.net.toFixed(2)}`, 20, 100);
+    if(i < db.length - 1) doc.addPage();
+  });
+  doc.save("Payroll_With_Date.pdf");
+}
+</script>
+
+</body>
+</html>
